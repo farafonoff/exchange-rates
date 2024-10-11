@@ -16,6 +16,11 @@
  */
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import * as cheerio from 'cheerio';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+
+const dynamoDbClient = new DynamoDBClient();
+const ddbDocClient = DynamoDBDocumentClient.from(dynamoDbClient);
 
 const banks = [
     {
@@ -76,7 +81,24 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     });
 
     const results = await Promise.all(rates);
-    // Your logic here
+
+    const currentTimestamp = new Date().toISOString();
+
+    const params = {
+        TableName: process.env.APP_HISTORY_TABLE_NAME!,
+        Item: {
+            pair: 'USD_TRY',
+            date: currentTimestamp,
+            rates: results,
+            expire_at: Math.floor((new Date().getTime() + 5 * 365 * 24 * 60 * 60 * 1000) / 1000) // 5 years
+        }
+    }
+    try {
+        await ddbDocClient.send(new PutCommand(params));
+        console.log(`Successfully stored data for ${results}`);
+    } catch (error) {
+        console.error(`Failed to store data for ${results}:`, error);
+    }
 
     return {
         statusCode: 200,

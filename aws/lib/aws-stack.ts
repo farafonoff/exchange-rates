@@ -36,17 +36,38 @@ export class AwsStack extends cdk.Stack {
    */
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const exchangeRateTable = new cdk.aws_dynamodb.Table(this, 'ExchangeRateTable', {
+      partitionKey: { name: 'pair', type: cdk.aws_dynamodb.AttributeType.STRING },
+      sortKey: { name: 'date', type: cdk.aws_dynamodb.AttributeType.STRING },
+      billingMode: cdk.aws_dynamodb.BillingMode.PROVISIONED,
+      readCapacity: 1,
+      writeCapacity: 1,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     const exchangeRateLambda = new NodejsFunction(this, 'ExchangeRateHandler', {
       runtime: lambda.Runtime.NODEJS_18_X,
       architecture: lambda.Architecture.ARM_64,
       entry: path.join(__dirname, 'exchange-rate-lambda', 'index.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(10),
+      environment: {
+        APP_HISTORY_TABLE_NAME: exchangeRateTable.tableName,
+      },
       bundling: {
         minify: false,
-        externalModules: ['aws-sdk']
+        externalModules: [
+          'aws-sdk',
+          'aws-lambda',
+          '@aws-sdk/client-dynamodb',
+          '@aws-sdk/lib-dynamodb'
+        ]
       }
     });
+
+    // Grant the Lambda function read/write permissions to the DynamoDB table
+    exchangeRateTable.grantReadWriteData(exchangeRateLambda);
 
     // Grant the Lambda function permissions to be invoked directly
     exchangeRateLambda.addPermission('LambdaInvokePermission', {
