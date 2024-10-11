@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,15 +10,19 @@
             width: 100%;
             border-collapse: collapse;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 8px;
         }
+
         th {
             background-color: #f2f2f2;
         }
     </style>
 </head>
+
 <body>
     <h1>Exchange Rates</h1>
     <table>
@@ -33,27 +38,34 @@
     </table>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const rates = [
-                { currency: 'USD', rate: 1.0 },
-                { currency: 'EUR', rate: 0.85 },
-                { currency: 'JPY', rate: 110.0 }
-            ];
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('https://mdqtomhupfpmguyvcztwwdiup40awbqg.lambda-url.eu-west-3.on.aws/')
+            .then(response => response.json())
+            .then(data => {
+                const rates = data.results;
+                const tbody = document.getElementById('exchange-rates');
+                let maxRate = Math.max(...rates.map(rate => rate.rate));
 
-            const tbody = document.getElementById('exchange-rates');
-            rates.forEach(rate => {
+                rates.forEach(rate => {
                 const row = document.createElement('tr');
                 const currencyCell = document.createElement('td');
                 const rateCell = document.createElement('td');
 
-                currencyCell.textContent = rate.currency;
+                currencyCell.textContent = rate.name;
                 rateCell.textContent = rate.rate;
+
+                if (rate.rate === maxRate) {
+                    row.style.backgroundColor = '#ffcccc'; // Highlight row with bigger rate
+                }
 
                 row.appendChild(currencyCell);
                 row.appendChild(rateCell);
                 tbody.appendChild(row);
-            });
+                });
+            })
+            .catch(error => console.error('Error fetching exchange rates:', error));
         });
     </script>
 </body>
+
 </html>
