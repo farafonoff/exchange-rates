@@ -38,6 +38,20 @@
     </table>
 
     <script>
+            /*
+            {
+    "results": [
+    {
+    "name": "ziraat",
+    "rate": 33.76
+    },
+    {
+    "name": "isbank",
+    "rate": 33.6983
+    }
+    ]
+    }
+    */
         document.addEventListener('DOMContentLoaded', function () {
             fetch('https://mdqtomhupfpmguyvcztwwdiup40awbqg.lambda-url.eu-west-3.on.aws/')
             .then(response => response.json())
@@ -54,8 +68,10 @@
                 currencyCell.textContent = rate.name;
                 rateCell.textContent = rate.rate;
 
-                if (rate.rate === maxRate) {
-                    row.style.backgroundColor = '#ffcccc'; // Highlight row with bigger rate
+                if (rate.name === 'ziraat') {
+                    row.style.backgroundColor = '#ffcccc'; // Pale red for ziraat
+                } else if (rate.name === 'isbank') {
+                    row.style.backgroundColor = '#ccccff'; // Pale blue for isbank
                 }
 
                 row.appendChild(currencyCell);
