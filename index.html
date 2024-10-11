@@ -68,10 +68,12 @@
                 currencyCell.textContent = rate.name;
                 rateCell.textContent = rate.rate;
 
-                if (rate.name === 'ziraat') {
-                    row.style.backgroundColor = '#ffcccc'; // Pale red for ziraat
-                } else if (rate.name === 'isbank') {
-                    row.style.backgroundColor = '#ccccff'; // Pale blue for isbank
+                if (rate.rate >= maxRate) {
+                    if (rate.name === 'ziraat') {
+                        row.style.backgroundColor = '#ffcccc'; // Pale red for ziraat
+                    } else if (rate.name === 'isbank') {
+                        row.style.backgroundColor = '#ccccff'; // Pale blue for isbank
+                    }
                 }
 
                 row.appendChild(currencyCell);
