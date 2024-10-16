@@ -2,6 +2,8 @@
 <html lang="en">
 
 <head>
+    <script src="https://unpkg.com/uplot@1.6.17/dist/uPlot.iife.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/uplot@1.6.17/dist/uPlot.min.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exchange Rates</title>
@@ -37,53 +39,119 @@
         </tbody>
     </table>
 
+    <div id="chart" style="width: 100%; height: 400px;">
+        <!-- uPlot chart will be rendered here -->
+    </div>
+
     <script>
-            /*
-            {
-    "results": [
-    {
-    "name": "ziraat",
-    "rate": 33.76
-    },
-    {
-    "name": "isbank",
-    "rate": 33.6983
-    }
-    ]
-    }
-    */
-        document.addEventListener('DOMContentLoaded', function () {
-            fetch('https://mdqtomhupfpmguyvcztwwdiup40awbqg.lambda-url.eu-west-3.on.aws/')
-            .then(response => response.json())
-            .then(data => {
-                const rates = data.results;
-                const tbody = document.getElementById('exchange-rates');
-                let maxRate = Math.max(...rates.map(rate => rate.rate));
+        /*
+        {
+"results": [
+{
+"name": "ziraat",
+"rate": 33.76
+},
+{
+"name": "isbank",
+"rate": 33.6983
+}
+]
+}
+*/
+        function getAndRenderExchangeRates() {
+            return fetch('https://mdqtomhupfpmguyvcztwwdiup40awbqg.lambda-url.eu-west-3.on.aws/')
+                .then(response => response.json())
+                .then(data => {
+                    const rates = data.results;
+                    const tbody = document.getElementById('exchange-rates');
+                    let maxRate = Math.max(...rates.map(rate => rate.rate));
 
-                rates.forEach(rate => {
-                const row = document.createElement('tr');
-                const currencyCell = document.createElement('td');
-                const rateCell = document.createElement('td');
+                    rates.forEach(rate => {
+                        const row = document.createElement('tr');
+                        const currencyCell = document.createElement('td');
+                        const rateCell = document.createElement('td');
 
-                currencyCell.textContent = rate.name;
-                rateCell.textContent = rate.rate;
+                        currencyCell.textContent = rate.name;
+                        rateCell.textContent = rate.rate;
 
-                if (rate.rate >= maxRate) {
-                    if (rate.name === 'ziraat') {
-                        row.style.backgroundColor = '#ffcccc'; // Pale red for ziraat
-                    } else if (rate.name === 'isbank') {
-                        row.style.backgroundColor = '#ccccff'; // Pale blue for isbank
-                    }
+                        if (rate.rate >= maxRate) {
+                            if (rate.name === 'ziraat') {
+                                row.style.backgroundColor = '#ffcccc'; // Pale red for ziraat
+                            } else if (rate.name === 'isbank') {
+                                row.style.backgroundColor = '#ccccff'; // Pale blue for isbank
+                            }
+                        }
+
+                        row.appendChild(currencyCell);
+                        row.appendChild(rateCell);
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error fetching exchange rates:', error));
+        }
+        function getAndRenderHistoryChart() {
+            return fetch('https://plcndlsoai3ygtvos3y6jonhcu0cujzs.lambda-url.eu-west-3.on.aws/')
+                .then(response => response.json())
+                .then(data => {
+                    const rates = data;
+                    const chartDataZiraat = rates.map(rate => rate.rates.find(r => r.name === 'ziraat').rate);
+                    const chartDataIsbank = rates.map(rate => rate.rates.find(r => r.name === 'isbank').rate);
+                    const timeValues = rates.map(rate => new Date(rate.date)/1000);
+                    const chartLabels = rates.map(rate => new Date(rate.date).toLocaleTimeString());
+
+                    const chartElement = document.getElementById('chart');
+
+                    new uPlot({
+                        width: chartElement.clientWidth,
+                        height: chartElement.clientHeight,
+                        title: 'Exchange Rate History',
+                        scales: {
+                            x: {
+                                time: true,
+                                values: chartLabels
+                            },
+                            y: {
+                                range: [Math.min(...chartDataZiraat, ...chartDataIsbank), Math.max(...chartDataZiraat, ...chartDataIsbank)]
+                            }
+                        },
+                        series: [
+                            {
+                                label: 'Time',
+                                value: (_, i) => new Date(i * 1000).toLocaleString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                            },
+                            {
+                                label: 'Ziraat',
+                                stroke: 'red',
+                                value: (_, i) => String(i)
+                            },
+                            {
+                                label: 'Isbank',
+                                stroke: 'blue',
+                                value: (_, i) => String(i)
+                            }
+                        ]
+                    }, [timeValues, chartDataZiraat, chartDataIsbank], chartElement);
+                })
+                .catch(error => console.error('Error fetching exchange rates:', error));
+        }
+        document.addEventListener('DOMContentLoaded', async () => {
+            async function fetchAndRenderData() {
+                const spinner = document.createElement('div');
+                spinner.innerHTML = '<img src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." style="width: 50px; height: 50px;">';
+                spinner.style.textAlign = 'center';
+                document.body.appendChild(spinner);
+
+                try {
+                    return await getAndRenderExchangeRates();
+                } finally {
+                    document.body.removeChild(spinner);
                 }
+            }
 
-                row.appendChild(currencyCell);
-                row.appendChild(rateCell);
-                tbody.appendChild(row);
-                });
-            })
-            .catch(error => console.error('Error fetching exchange rates:', error));
+            await fetchAndRenderData();
+            await getAndRenderHistoryChart();
         });
     </script>
-</body>
+    </body>
 
 </html>

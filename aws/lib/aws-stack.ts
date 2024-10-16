@@ -79,10 +79,50 @@ export class AwsStack extends cdk.Stack {
     const lambdaUrl = exchangeRateLambda.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
       cors: {
-        allowedOrigins: ['https://farafonoff.github.io'],
+        allowedOrigins: ['https://farafonoff.github.io', 'http://localhost:3000'],
         allowedMethods: [lambda.HttpMethod.GET],
       },
     });
+
+    const rateHistoryLambda = new NodejsFunction(this, 'RateHistoryHandler', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      architecture: lambda.Architecture.ARM_64,
+      entry: path.join(__dirname, 'rate-history-lambda', 'index.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      environment: {
+        APP_HISTORY_TABLE_NAME: exchangeRateTable.tableName,
+      },
+      bundling: {
+        minify: false,
+        externalModules: [
+          'aws-sdk',
+          'aws-lambda',
+          '@aws-sdk/client-dynamodb',
+          '@aws-sdk/lib-dynamodb'
+        ]
+      }
+    });
+
+    // Grant the Lambda function read/write permissions to the DynamoDB table
+    exchangeRateTable.grantReadWriteData(rateHistoryLambda);
+
+    // Grant the Lambda function permissions to be invoked directly
+    rateHistoryLambda.addPermission('LambdaInvokePermission', {
+      principal: new cdk.aws_iam.ServicePrincipal('lambda.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: rateHistoryLambda.functionArn
+    });
+
+    const rateHistoryLambdaUrl = rateHistoryLambda.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: ['https://farafonoff.github.io', 'http://localhost:3000'],
+        allowedMethods: [lambda.HttpMethod.GET],
+      },
+    });
+
+    new cdk.CfnOutput(this, 'RateHistoryFunctionUrl', { value: rateHistoryLambdaUrl.url });
 
     new cdk.CfnOutput(this, 'FunctionUrl ', { value: lambdaUrl.url });
 
