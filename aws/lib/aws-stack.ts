@@ -69,7 +69,7 @@ export class AwsStack extends cdk.Stack {
     const rule = new cdk.aws_events.Rule(this, 'ScheduleRule', {
       schedule: cdk.aws_events.Schedule.cron({
         minute: '0,30',
-        hour: '4-14',
+        hour: '5-15',
         weekDay: 'MON-FRI',
       }),
     });
