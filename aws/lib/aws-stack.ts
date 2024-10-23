@@ -66,6 +66,16 @@ export class AwsStack extends cdk.Stack {
       }
     });
 
+    const rule = new cdk.aws_events.Rule(this, 'ScheduleRule', {
+      schedule: cdk.aws_events.Schedule.cron({
+        minute: '0,30',
+        hour: '4-14',
+        weekDay: 'MON-FRI',
+      }),
+    });
+
+    rule.addTarget(new cdk.aws_events_targets.LambdaFunction(exchangeRateLambda));
+
     // Grant the Lambda function read/write permissions to the DynamoDB table
     exchangeRateTable.grantReadWriteData(exchangeRateLambda);
 
