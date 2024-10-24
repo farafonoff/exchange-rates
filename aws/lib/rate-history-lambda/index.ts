@@ -11,6 +11,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const currentDate = new Date();
     const twoMonthsAgo = new Date();
     twoMonthsAgo.setMonth(currentDate.getMonth() - 2);
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(currentDate.getDate() - 14);
 
     const params = {
         TableName: tableName,
@@ -21,7 +23,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         },
         ExpressionAttributeValues: {
             ":pair": pair,
-            ":start_date": twoMonthsAgo.toISOString(),
+            ":start_date": twoWeeksAgo.toISOString(),
             ":end_date": currentDate.toISOString()
         },
         ReturnConsumedCapacity: ReturnConsumedCapacity.TOTAL
